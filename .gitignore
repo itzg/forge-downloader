@@ -1,0 +1,6 @@
+/.idea/
+/*.iml
+/*.jar
+/dist/
+/forge-downloader
+/forge-downloader.exe
