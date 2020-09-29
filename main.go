@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 )
 
@@ -34,6 +33,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{Name: "install", Usage: "run the installer after downloading"},
 		cli.BoolFlag{Name: "keep", Usage: "keep the installer file after running it"},
+		cli.BoolFlag{Name: "latest", Usage: "download the latest version of Forge"},
 	}
 
 	err := app.Run(os.Args)
@@ -48,9 +48,14 @@ func run(c *cli.Context) error {
 	}
 
 	version := c.Args()[0]
+	latest := false
 	fmt.Println("Downloading Forge for Minecraft version:", version)
 
-	err, promoVersion := locatePromoVersion(version)
+	if c.Bool("latest") {
+		latest = true
+	}
+
+	err, promoVersion := locatePromoVersion(version, latest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,11 +80,11 @@ func run(c *cli.Context) error {
 			}
 		}
 	}
-
+	
 	return nil
 }
 
-func locatePromoVersion(mcVersion string) (error, string) {
+func locatePromoVersion(mcVersion string, latest bool) (error, string) {
 	resp, err := http.Get("http://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json")
 	if err != nil {
 		return errors.Wrap(err, "unable to download promotions info"), ""
@@ -98,11 +103,14 @@ func locatePromoVersion(mcVersion string) (error, string) {
 		return errors.Wrap(err, "failed to decode promotions response"), ""
 	}
 
-	for _, flavor := range []string{"recommended", "latest"} {
-		for ver, promo := range promotions.Promos {
-			if strings.HasPrefix(ver, fmt.Sprintf("%s-%s", mcVersion, flavor)) {
-				return nil, promo
-			}
+	flavor := "recommended"
+	if latest {
+		flavor = "latest"
+	}
+
+	for ver, promo := range promotions.Promos {
+		if strings.HasPrefix(ver, fmt.Sprintf("%s-%s", mcVersion, flavor)) {
+			return nil, promo
 		}
 	}
 
@@ -113,6 +121,9 @@ func locatePromoVersion(mcVersion string) (error, string) {
 // the path to the downloaded file
 func download(mcVersion, promoVersion string) (error, string) {
 	combinedVer := fmt.Sprintf("%s-%s", mcVersion, promoVersion)
+	if mcVersion == "1.7.10" {
+		combinedVer = fmt.Sprintf("%s-%s-%s", mcVersion, promoVersion, mcVersion)
+	}
 
 	url := fmt.Sprintf(
 		"http://files.minecraftforge.net/maven/net/minecraftforge/forge/%s/forge-%s-%s.jar",
@@ -130,7 +141,7 @@ func download(mcVersion, promoVersion string) (error, string) {
 		return errors.Errorf("unexpected response code %d while getting forge file", resp.StatusCode), ""
 	}
 
-	filename := path.Base(url)
+	filename := fmt.Sprintf("forge-%s-%s-%s.jar", mcVersion, promoVersion, "installer")
 	file, err := os.Create(filename)
 	if err != nil {
 		return errors.Wrap(err, "unable to open file for writing"), ""
