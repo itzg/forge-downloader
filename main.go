@@ -48,10 +48,9 @@ func run(c *cli.Context) error {
 	}
 
 	version := c.Args()[0]
-	latest := c.Bool("latest")
 	fmt.Println("Downloading Forge for Minecraft version:", version)
 
-	err, promoVersion := locatePromoVersion(version, latest)
+	err, promoVersion := locatePromoVersion(version, c.Bool("latest"))
 	if err != nil {
 		log.Fatal(err)
 	}
