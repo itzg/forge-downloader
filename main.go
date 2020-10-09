@@ -119,7 +119,7 @@ func locatePromoVersion(mcVersion string, latest bool) (error, string) {
 // the path to the downloaded file
 func download(mcVersion, promoVersion string) (error, string) {
 	combinedVer := fmt.Sprintf("%s-%s", mcVersion, promoVersion)
-	if ((mcVersion == "1.7.10") || ((mcVersion == "1.8.9") && (strings.HasSuffix(promoVersion, ".2318"))) {
+	if ((mcVersion == "1.7.10") || ((mcVersion == "1.8.9") && (strings.HasSuffix(promoVersion, ".2318")))) {
 		combinedVer = fmt.Sprintf("%s-%s-%s", mcVersion, promoVersion, mcVersion)
 	}
 	
