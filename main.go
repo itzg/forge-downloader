@@ -98,17 +98,17 @@ func locatePromoVersion(mcVersion string, latest bool) (error, string) {
 		return errors.Wrap(err, "failed to decode promotions response"), ""
 	}
 
-	flavor := "recommended"
-	if (latest || (mcVersion == "1.8.8")) {
-		flavor = "latest"
-	}
-
-	for ver, promo := range promotions.Promos {
-		if strings.HasSuffix(ver, fmt.Sprintf("%s-%s", flavor, mcVersion)) {
+	for _, flavor := range []string{"recommended", "latest"} {
+		if (latest && (flavor == "recommended")) {
 			continue
 		}
-		if strings.HasPrefix(ver, fmt.Sprintf("%s-%s", mcVersion, flavor)) {
-			return nil, promo
+		for ver, promo := range promotions.Promos {
+			if strings.HasSuffix(ver, fmt.Sprintf("%s-%s", flavor, mcVersion)) {
+				continue
+			}
+			if strings.HasPrefix(ver, fmt.Sprintf("%s-%s", mcVersion, flavor)) {
+				return nil, promo
+			}
 		}
 	}
 
@@ -119,8 +119,14 @@ func locatePromoVersion(mcVersion string, latest bool) (error, string) {
 // the path to the downloaded file
 func download(mcVersion, promoVersion string) (error, string) {
 	combinedVer := fmt.Sprintf("%s-%s", mcVersion, promoVersion)
-	if ((mcVersion == "1.7.10") || (mcVersion == "1.8.9")) {
+	if mcVersion == "1.7.10" {
 		combinedVer = fmt.Sprintf("%s-%s-%s", mcVersion, promoVersion, mcVersion)
+	}
+	
+	if mcVersion == "1.8.9" {
+		if strings.HasSuffix(promoVersion, ".2318") {
+			combinedVer = fmt.Sprintf("%s-%s-%s", mcVersion, promoVersion, mcVersion)
+		}
 	}
 
 	if mcVersion == "1.10" {
